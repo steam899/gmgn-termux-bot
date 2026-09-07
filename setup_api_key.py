@@ -18,6 +18,7 @@ from pathlib import Path
 from getpass import getpass
 import tempfile
 import re
+import shutil
 
 
 class GMGNSetup:
@@ -33,6 +34,30 @@ class GMGNSetup:
         self.public_key = None
         self.api_key = None
         self.private_key = None
+        self.openssl_path = self._find_openssl()
+    
+    def _find_openssl(self):
+        """Find OpenSSL in various locations (especially for Termux)."""
+        # Try standard which first
+        try:
+            result = subprocess.run(['which', 'openssl'], capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except:
+            pass
+        
+        # Common Termux paths
+        termux_paths = [
+            '/data/data/com.termux/files/usr/bin/openssl',
+            '/system/bin/openssl',
+            shutil.which('openssl'),  # Fallback to shutil
+        ]
+        
+        for path in termux_paths:
+            if path and os.path.exists(path):
+                return path
+        
+        return None
     
     def log(self, level, msg):
         """Print colored log messages."""
@@ -66,21 +91,22 @@ class GMGNSetup:
     def check_dependencies(self):
         """Verify required tools are installed."""
         self.log('info', "Checking dependencies...")
-        required = {
-            'openssl': 'OpenSSL',
-            'npm': 'Node.js/npm',
-            'node': 'Node.js/npm'
-        }
         
-        missing = []
-        for cmd, name in required.items():
-            _, code = self.run_command(f"which {cmd}", check=False)
-            if code != 0:
-                missing.append(name)
+        # Check OpenSSL
+        if not self.openssl_path:
+            self.log('error', "OpenSSL not found")
+            self.log('info', "Install with: apt install openssl")
+            return False
         
-        if missing:
-            self.log('error', f"Missing dependencies: {', '.join(missing)}")
-            self.log('info', "Install with: apt install openssl npm (or brew install on macOS)")
+        self.log('success', f"OpenSSL found at: {self.openssl_path}")
+        
+        # Check Python has necessary modules
+        try:
+            import subprocess
+            import tempfile
+            self.log('success', "Python dependencies OK")
+        except ImportError as e:
+            self.log('error', f"Missing Python module: {e}")
             return False
         
         self.log('success', "All dependencies found")
@@ -90,24 +116,25 @@ class GMGNSetup:
         """Generate Ed25519 key pair using OpenSSL."""
         self.log('info', "Generating Ed25519 key pair...")
         
+        if not self.openssl_path:
+            self.log('error', "OpenSSL not available")
+            return False
+        
         with tempfile.TemporaryDirectory() as tmpdir:
             private_key_file = os.path.join(tmpdir, "private.pem")
             
             # Generate private key
-            _, code = self.run_command(
-                f"openssl genpkey -algorithm ed25519 -out {private_key_file} 2>/dev/null",
-                check=False
-            )
+            gen_cmd = f'{self.openssl_path} genpkey -algorithm ed25519 -out {private_key_file} 2>/dev/null'
+            _, code = self.run_command(gen_cmd, check=False)
             
             if code != 0:
                 self.log('error', "Failed to generate private key")
+                self.log('info', f"Tried command: {gen_cmd}")
                 return False
             
             # Extract public key
-            pub_key_output, code = self.run_command(
-                f"openssl pkey -in {private_key_file} -pubout 2>/dev/null",
-                check=False
-            )
+            pub_cmd = f'{self.openssl_path} pkey -in {private_key_file} -pubout 2>/dev/null'
+            pub_key_output, code = self.run_command(pub_cmd, check=False)
             
             if code != 0:
                 self.log('error', "Failed to extract public key")
@@ -379,12 +406,21 @@ Examples:
     parser.add_argument('--api-key', help='GMGN API Key (skip web registration)')
     parser.add_argument('--show-only-keys', action='store_true', help='Generate and show keys only')
     parser.add_argument('--auto', action='store_true', help='Automatic mode (requires --api-key)')
+    parser.add_argument('--find-openssl', action='store_true', help='Find OpenSSL path and exit')
     
     args = parser.parse_args()
     
     setup = GMGNSetup()
     
     try:
+        if args.find_openssl:
+            if setup.openssl_path:
+                print(f"✅ OpenSSL found at: {setup.openssl_path}")
+                return 0
+            else:
+                print("❌ OpenSSL not found")
+                return 1
+        
         if args.show_only_keys:
             if not setup.check_dependencies():
                 return 1
@@ -408,6 +444,8 @@ Examples:
         return 1
     except Exception as e:
         setup.log('error', f"Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 
