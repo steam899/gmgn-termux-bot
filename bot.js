@@ -1,4 +1,5 @@
-import axios from 'axios';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -7,6 +8,7 @@ import cron from 'node-cron';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const execAsync = promisify(exec);
 
 dotenv.config();
 
@@ -26,7 +28,6 @@ class GMGNBot {
       }
     };
     this.startTime = Date.now();
-    this.baseUrl = 'https://api.gmgn.ai/defi';
   }
 
   loadSettings() {
@@ -79,38 +80,25 @@ class GMGNBot {
   async getTrendingTokens(chain = 'sol') {
     try {
       const config = this.settings.monitoring.trendingTokens;
-      const params = new URLSearchParams({
-        chain: config.chain,
-        interval: config.interval,
-        limit: config.limit,
-        order_by: 'volume'
-      });
-
-      if (config.minLiquidity) {
-        params.append('min_liquidity', config.minLiquidity);
+      
+      // Use gmgn-cli instead of direct HTTP
+      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli market trending --chain ${config.chain} --interval ${config.interval} --limit ${config.limit} --order-by volume --raw 2>/dev/null`;
+      
+      const { stdout } = await execAsync(cmd);
+      
+      if (!stdout) {
+        this.log('warn', 'No trending tokens returned from CLI');
+        return [];
       }
 
-      config.filters.forEach(filter => {
-        params.append('filter', filter);
-      });
-
-      const response = await axios.get(
-        `${this.baseUrl}/v3/sort/trending?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      this.data.trendingTokens = response.data.data || [];
+      const result = JSON.parse(stdout);
+      this.data.trendingTokens = result.data || result || [];
       this.data.stats.totalRequests++;
       this.log('success', `Fetched ${this.data.trendingTokens.length} trending tokens`, `(${chain})`);
       return this.data.trendingTokens;
     } catch (error) {
       this.data.stats.errors++;
-      this.log('error', 'Failed to fetch trending tokens:', error.response?.data?.message || error.message);
+      this.log('error', 'Failed to fetch trending tokens:', error.message);
       return [];
     }
   }
@@ -118,51 +106,41 @@ class GMGNBot {
   async getNewTokens(chain = 'sol') {
     try {
       const config = this.settings.monitoring.trenches;
-      const params = new URLSearchParams({
-        chain: config.chain,
-        type: 'new_creation',
-        limit: config.limit
-      });
+      
+      // Use gmgn-cli for trenches (new tokens)
+      const launchpads = config.launchpads.map(lp => `--launchpad-platform ${lp}`).join(' ');
+      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli market trenches --chain ${config.chain} --type new_creation ${launchpads} --limit ${config.limit} --raw 2>/dev/null`;
+      
+      const { stdout } = await execAsync(cmd);
+      
+      if (!stdout) {
+        this.log('warn', 'No new tokens returned from CLI');
+        return [];
+      }
 
-      config.launchpads.forEach(lp => {
-        params.append('launchpad_platform', lp);
-      });
-
-      const response = await axios.get(
-        `${this.baseUrl}/v3/sort/trenches?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      this.data.newTokens = response.data.data || [];
+      const result = JSON.parse(stdout);
+      this.data.newTokens = result.data || result || [];
       this.data.stats.totalRequests++;
       this.log('success', `Fetched ${this.data.newTokens.length} new tokens`, `(${chain})`);
       return this.data.newTokens;
     } catch (error) {
       this.data.stats.errors++;
-      this.log('error', 'Failed to fetch new tokens:', error.response?.data?.message || error.message);
+      this.log('error', 'Failed to fetch new tokens:', error.message);
       return [];
     }
   }
 
   async getTokenInfo(chain = 'sol', address) {
     try {
-      const response = await axios.get(
-        `${this.baseUrl}/v3/token/info?chain=${chain}&address=${address}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli token info --chain ${chain} --address ${address} --raw 2>/dev/null`;
+      
+      const { stdout } = await execAsync(cmd);
+      
+      if (!stdout) return null;
 
+      const result = JSON.parse(stdout);
       this.data.stats.totalRequests++;
-      return response.data.data;
+      return result.data || result;
     } catch (error) {
       this.data.stats.errors++;
       this.log('error', 'Failed to fetch token info:', error.message);
@@ -232,7 +210,7 @@ class GMGNBot {
 
   start() {
     console.clear();
-    this.log('info', chalk.cyan.bold('🚀 GMGN Termux Bot v1.0.0'));
+    this.log('info', chalk.cyan.bold('🚀 GMGN Termux Bot v1.0.0 (CLI Edition)'));
     this.log('info', 'Starting bot...');
 
     if (!this.apiKey) {
@@ -242,6 +220,7 @@ class GMGNBot {
     }
 
     this.log('success', 'API Key configured');
+    this.log('info', 'Using gmgn-cli for API calls...');
 
     // Initial update
     this.update();
