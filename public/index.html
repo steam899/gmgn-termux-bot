@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMGN Termux Bot Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <span>GMGN Bot</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-section="trending">
+                    <i class="fas fa-fire"></i> Trending
+                </a>
+                <a href="#" class="nav-item" data-section="new-tokens">
+                    <i class="fas fa-star"></i> New Tokens
+                </a>
+                <a href="#" class="nav-item" data-section="alerts">
+                    <i class="fas fa-bell"></i> Alerts
+                </a>
+                <a href="#" class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <a href="#" class="nav-item" data-section="logs">
+                    <i class="fas fa-terminal"></i> Logs
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-indicator" id="status">
+                    <span class="dot"></span>
+                    <span>Connected</span>
+                </div>
+                <small>v1.0.0</small>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1>GMGN Termux Bot</h1>
+                    <p id="lastUpdate">Last update: Just now</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button class="btn btn-secondary" id="exportBtn">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="section active">
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Trending Tokens</h3>
+                            <p class="stat-value" id="trendingCount">0</p>
+                            <span class="stat-label">Currently monitored</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>New Tokens</h3>
+                            <p class="stat-value" id="newTokensCount">0</p>
+                            <span class="stat-label">Recently launched</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Active Alerts</h3>
+                            <p class="stat-value" id="alertsCount">0</p>
+                            <span class="stat-label">Notifications</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Bot Status</h3>
+                            <p class="stat-value" id="uptime">0d 0h</p>
+                            <span class="stat-label">Uptime</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>API Requests</h3>
+                        <div class="metric-value" id="totalRequests">0</div>
+                        <div class="metric-bar">
+                            <div class="metric-fill" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Errors</h3>
+                        <div class="metric-value" id="errorCount">0</div>
+                        <div class="metric-bar">
+                            <div class="metric-fill" style="background: #ff6b6b; width: 5%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trending Section -->
+            <section id="trending-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-fire"></i> Trending Tokens</h2>
+                    <p>Top 20 tokens by trading volume (last 1h)</p>
+                </div>
+                <div class="table-responsive" id="trendingTable">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                                <th>Volume</th>
+                                <th>Market Cap</th>
+                                <th>Chain</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trendingBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 20px;">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- New Tokens Section -->
+            <section id="new-tokens-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-star"></i> New Tokens (Trenches)</h2>
+                    <p>Recently launched tokens from Pump.fun and other launchpads</p>
+                </div>
+                <div class="tokens-grid" id="newTokensGrid">
+                    <div style="grid-column: 1/-1; text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Alerts Section -->
+            <section id="alerts-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-bell"></i> Active Alerts</h2>
+                    <p>Price changes and trading signals</p>
+                </div>
+                <div id="alertsList" class="alerts-list">
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        <i class="fas fa-inbox"></i> No alerts yet
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cog"></i> Bot Settings</h2>
+                    <p>Configure your bot preferences</p>
+                </div>
+                <div class="settings-container" id="settingsContainer">
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading settings...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section id="logs-section" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-terminal"></i> Bot Logs</h2>
+                    <p>Real-time bot activity logs</p>
+                </div>
+                <div class="logs-container" id="logsList">
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading logs...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
