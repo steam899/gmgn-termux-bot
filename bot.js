@@ -81,8 +81,8 @@ class GMGNBot {
     try {
       const config = this.settings.monitoring.trendingTokens;
       
-      // Use gmgn-cli instead of direct HTTP
-      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli market trending --chain ${config.chain} --interval ${config.interval} --limit ${config.limit} --order-by volume --raw 2>/dev/null`;
+      // Use gmgn-cli with all required parameters
+      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli market trending --chain ${config.chain} --interval ${config.interval} --limit ${config.limit} --order-by volume --raw`;
       
       const { stdout } = await execAsync(cmd);
       
@@ -107,9 +107,9 @@ class GMGNBot {
     try {
       const config = this.settings.monitoring.trenches;
       
-      // Use gmgn-cli for trenches (new tokens)
+      // Use gmgn-cli for trenches (new tokens) with interval parameter
       const launchpads = config.launchpads.map(lp => `--launchpad-platform ${lp}`).join(' ');
-      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli market trenches --chain ${config.chain} --type new_creation ${launchpads} --limit ${config.limit} --raw 2>/dev/null`;
+      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli market trenches --chain ${config.chain} --type new_creation ${launchpads} --limit ${config.limit} --interval 1h --raw`;
       
       const { stdout } = await execAsync(cmd);
       
@@ -132,7 +132,7 @@ class GMGNBot {
 
   async getTokenInfo(chain = 'sol', address) {
     try {
-      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli token info --chain ${chain} --address ${address} --raw 2>/dev/null`;
+      const cmd = `GMGN_API_KEY=${this.apiKey} gmgn-cli token info --chain ${chain} --address ${address} --raw`;
       
       const { stdout } = await execAsync(cmd);
       
@@ -220,7 +220,7 @@ class GMGNBot {
     }
 
     this.log('success', 'API Key configured');
-    this.log('info', 'Using gmgn-cli for API calls...');
+    this.log('info', 'Using gmgn-cli for API calls (v1.6.1+)...');
 
     // Initial update
     this.update();
