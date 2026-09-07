@@ -1,0 +1,24 @@
+{
+  "name": "gmgn-termux-bot",
+  "version": "1.0.0",
+  "description": "Simple GMGN Bot for Termux with Dashboard UI",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js --dev",
+    "setup": "node setup.js"
+  },
+  "keywords": ["gmgn", "crypto", "trading", "bot", "termux"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "chalk": "^5.3.0",
+    "node-cron": "^3.0.2",
+    "blessed": "^0.1.81",
+    "table": "^6.8.1"
+  }
+}

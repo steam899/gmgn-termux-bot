@@ -1,0 +1,40 @@
+{
+  "chains": ["sol", "bsc", "base"],
+  "monitoring": {
+    "enabled": true,
+    "interval": 60000,
+    "trendingTokens": {
+      "enabled": true,
+      "chain": "sol",
+      "interval": "1h",
+      "limit": 20,
+      "minLiquidity": 10000,
+      "filters": ["not_honeypot", "not_risk"]
+    },
+    "trenches": {
+      "enabled": true,
+      "chain": "sol",
+      "launchpads": ["Pump.fun", "letsbonk"],
+      "limit": 20
+    }
+  },
+  "alerts": {
+    "enabled": true,
+    "priceChange": 50,
+    "volumeIncrease": 5,
+    "smartMoneyBuy": true
+  },
+  "dashboard": {
+    "enabled": true,
+    "port": 3000,
+    "refresh": 5000,
+    "theme": "dark",
+    "showCharts": true
+  },
+  "logging": {
+    "level": "info",
+    "file": "logs/bot.log",
+    "maxSize": "10m",
+    "maxFiles": 5
+  }
+}
